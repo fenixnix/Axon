@@ -98,7 +98,7 @@ impl Executor {
                         .map(|tc| tc.id.clone())
                         .unwrap_or_default();
                     let msg = Message::tool(tool_call_id, result.output.to_string());
-                    eprintln!("[DEBUG] Tool result: {}", msg.content);
+                    eprintln!("[DEBUG] Tool result: {:?}", msg.content.as_str());
                     let mut memory = self.memory.lock().await;
                     memory.add_message(msg.clone());
                     memory.append(&msg).await
@@ -113,11 +113,11 @@ impl Executor {
                 
                 eprintln!("[DEBUG] Sending follow-up request with tool results...");
                 let final_response = self.llm.chat(&context, None).await?;
-                return Ok(final_response.content);
+                return Ok(final_response.content.as_str().unwrap_or("").to_string());
             }
         }
         
-        Ok(response.content)
+        Ok(response.content.as_str().unwrap_or("").to_string())
     }
     
     /// Execute a single tool

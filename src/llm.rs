@@ -142,6 +142,46 @@ impl LlmClient {
         self.chat(&[test_message], None).await?;
         Ok(())
     }
+    
+    /// Perform OCR on an image using vision model
+    pub async fn ocr_image(&self, image_base64: &str, prompt: &str) -> Result<String, LlmError> {
+        let url = format!("{}/chat/completions", self.config.base_url);
+        
+        let message = Message::user_with_image(prompt, image_base64);
+        
+        let request = ChatRequest {
+            model: self.config.model.clone(),
+            messages: vec![message],
+            tools: None,
+            stream: false,
+        };
+        
+        let response = self.client
+            .post(&url)
+            .header("Content-Type", "application/json")
+            .header("Authorization", format!("Bearer {}", self.config.api_key))
+            .json(&request)
+            .send()
+            .await
+            .map_err(|e| LlmError::RequestFailed(e.to_string()))?;
+        
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            return Err(LlmError::RequestFailed(format!("{}: {}", status, body)));
+        }
+        
+        let chat_response: ChatResponse = response
+            .json()
+            .await
+            .map_err(|e| LlmError::ParseError(e.to_string()))?;
+        
+        chat_response.choices
+            .into_iter()
+            .next()
+            .map(|c| c.message.content.as_str().unwrap_or("").to_string())
+            .ok_or_else(|| LlmError::ParseError("No choices in response".to_string()))
+    }
 }
 
 #[cfg(test)]

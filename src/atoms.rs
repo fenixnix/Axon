@@ -21,6 +21,15 @@ pub enum AtomError {
     
     #[error("原子未启用")]
     NotEnabled,
+    
+    #[error("LLM错误: {0}")]
+    LlmError(String),
+}
+
+impl From<crate::llm::LlmError> for AtomError {
+    fn from(err: crate::llm::LlmError) -> Self {
+        AtomError::LlmError(err.to_string())
+    }
 }
 
 /// The fundamental interface for all atoms (tools)
@@ -100,6 +109,20 @@ impl AtomRegistry {
                             }
                         },
                         "required": ["path", "content"]
+                    }),
+                    "image_ocr" => serde_json::json!({
+                        "type": "object",
+                        "properties": {
+                            "path": {
+                                "type": "string",
+                                "description": "The path to the image file (JPEG, PNG, WebP supported)"
+                            },
+                            "prompt": {
+                                "type": "string",
+                                "description": "Optional prompt for OCR (default: '请提取这张图片中的文字')"
+                            }
+                        },
+                        "required": ["path"]
                     }),
                     _ => serde_json::json!({
                         "type": "object",
@@ -268,12 +291,85 @@ impl Atom for FileWrite {
     }
 }
 
+/// Image OCR Atom - Extract text from images using vision LLM
+pub struct ImageOCR;
+
+impl ImageOCR {
+    /// Convert image to base64 JPEG format
+    fn image_to_base64(&self, path: &str) -> Result<String, AtomError> {
+        use image::ImageFormat;
+        
+        // Read and decode image
+        let img = image::open(path)
+            .map_err(|e| AtomError::ExecutionFailed(format!("Failed to open image: {}", e)))?;
+        
+        // Convert to RGB8 and encode as JPEG
+        let rgb_img = img.to_rgb8();
+        let mut buffer = std::io::Cursor::new(Vec::new());
+        rgb_img.write_to(&mut buffer, ImageFormat::Jpeg)
+            .map_err(|e| AtomError::ExecutionFailed(format!("Failed to encode image: {}", e)))?;
+        
+        // Base64 encode
+        Ok(base64::Engine::encode(&base64::engine::general_purpose::STANDARD, buffer.into_inner()))
+    }
+}
+
+#[async_trait]
+impl Atom for ImageOCR {
+    fn name(&self) -> &'static str {
+        "image_ocr"
+    }
+    
+    fn description(&self) -> &'static str {
+        "Extract text from an image file using vision AI. Supports JPEG, PNG, WebP formats."
+    }
+    
+    async fn execute(&self, args: Value) -> Result<Value, AtomError> {
+        let path = args["path"]
+            .as_str()
+            .ok_or_else(|| AtomError::InvalidArgs("Missing 'path' parameter".to_string()))?;
+        
+        let prompt = args["prompt"]
+            .as_str()
+            .unwrap_or("请提取这张图片中的文字");
+        
+        // Convert image to base64
+        let base64_image = self.image_to_base64(path)?;
+        
+        // Create LLM client from environment/config
+        // Note: In a full implementation, this should be injected from the executor
+        let config = crate::llm::LlmConfig {
+            model: std::env::var("VISION_MODEL").unwrap_or_else(|_| "qwen/qwen3-vl-30b".to_string()),
+            api_key: std::env::var("OPENAI_API_KEY").unwrap_or_default(),
+            base_url: std::env::var("OPENAI_BASE_URL").unwrap_or_else(|_| "http://localhost:1234/v1".to_string()),
+            timeout_secs: 120,
+        };
+        
+        let client = crate::llm::LlmClient::new(config)?;
+        
+        // Call vision model for OCR
+        match client.ocr_image(&base64_image, prompt).await {
+            Ok(text) => Ok(serde_json::json!({
+                "path": path,
+                "text": text,
+                "success": true
+            })),
+            Err(e) => Ok(serde_json::json!({
+                "path": path,
+                "error": format!("{}", e),
+                "success": false
+            }))
+        }
+    }
+}
+
 /// Create a default registry with built-in atoms
 pub fn create_default_registry() -> AtomRegistry {
     let mut registry = AtomRegistry::new();
     registry.register(Box::new(ShellExec));
     registry.register(Box::new(FileRead));
     registry.register(Box::new(FileWrite));
+    registry.register(Box::new(ImageOCR));
     registry
 }
 

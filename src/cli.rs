@@ -227,7 +227,7 @@ async fn handle_memory_command(subcommand: &MemorySubcommand, memory_path: &Path
             memory.load().await?;
             println!("Memory contents:");
             for msg in memory.get_messages() {
-                println!("[{}] {}", msg.role, msg.content);
+                println!("[{}] {}", msg.role, msg.content.as_str().unwrap_or(""));
             }
         }
         MemorySubcommand::Clear => {

@@ -18,22 +18,106 @@ pub enum MemoryError {
     InvalidFormat,
 }
 
+/// Content part for multi-modal messages
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum ContentPart {
+    Text { text: String },
+    ImageUrl { image_url: ImageUrl },
+}
+
+/// Image URL for vision models
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ImageUrl {
+    pub url: String,
+}
+
 /// A message in the conversation
+/// For vision models, content can be a string or an array of content parts
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Message {
     pub role: String,
-    pub content: String,
-    #[serde(default)]
+    /// Content can be:
+    /// - String: for text-only messages
+    /// - Array of ContentPart: for multi-modal messages (vision)
+    #[serde(with = "serde_content")]
+    pub content: Content,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tool_calls: Option<Vec<ToolCall>>,
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tool_call_id: Option<String>,
+}
+
+/// Content type that can be serialized as either string or array
+#[derive(Debug, Clone)]
+pub enum Content {
+    Text(String),
+    Parts(Vec<ContentPart>),
+}
+
+impl Content {
+    pub fn as_str(&self) -> Option<&str> {
+        match self {
+            Content::Text(s) => Some(s),
+            Content::Parts(_) => None,
+        }
+    }
+}
+
+mod serde_content {
+    use super::{Content, ContentPart};
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S>(content: &Content, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match content {
+            Content::Text(text) => text.serialize(serializer),
+            Content::Parts(parts) => parts.serialize(serializer),
+        }
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Content, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = serde_json::Value::deserialize(deserializer)?;
+        
+        if let Some(text) = value.as_str() {
+            Ok(Content::Text(text.to_string()))
+        } else if let Some(array) = value.as_array() {
+            let parts: Vec<ContentPart> = serde_json::from_value(value)
+                .map_err(serde::de::Error::custom)?;
+            Ok(Content::Parts(parts))
+        } else {
+            Err(serde::de::Error::custom("content must be string or array"))
+        }
+    }
 }
 
 impl Message {
     pub fn user(content: impl Into<String>) -> Self {
         Self {
             role: "user".to_string(),
-            content: content.into(),
+            content: Content::Text(content.into()),
+            tool_calls: None,
+            tool_call_id: None,
+        }
+    }
+    
+    /// Create a user message with image for vision models
+    pub fn user_with_image(text: impl Into<String>, image_base64: impl Into<String>) -> Self {
+        Self {
+            role: "user".to_string(),
+            content: Content::Parts(vec![
+                ContentPart::Text { text: text.into() },
+                ContentPart::ImageUrl { 
+                    image_url: ImageUrl { 
+                        url: format!("data:image/jpeg;base64, {}", image_base64.into())
+                    }
+                },
+            ]),
             tool_calls: None,
             tool_call_id: None,
         }
@@ -42,7 +126,7 @@ impl Message {
     pub fn assistant(content: impl Into<String>) -> Self {
         Self {
             role: "assistant".to_string(),
-            content: content.into(),
+            content: Content::Text(content.into()),
             tool_calls: None,
             tool_call_id: None,
         }
@@ -51,7 +135,7 @@ impl Message {
     pub fn assistant_with_tools(tool_calls: Vec<ToolCall>) -> Self {
         Self {
             role: "assistant".to_string(),
-            content: String::new(),
+            content: Content::Text(String::new()),
             tool_calls: Some(tool_calls),
             tool_call_id: None,
         }
@@ -60,7 +144,7 @@ impl Message {
     pub fn system(content: impl Into<String>) -> Self {
         Self {
             role: "system".to_string(),
-            content: content.into(),
+            content: Content::Text(content.into()),
             tool_calls: None,
             tool_call_id: None,
         }
@@ -70,7 +154,7 @@ impl Message {
     pub fn tool(tool_call_id: impl Into<String>, content: impl Into<String>) -> Self {
         Self {
             role: "tool".to_string(),
-            content: content.into(),
+            content: Content::Text(content.into()),
             tool_calls: None,
             tool_call_id: Some(tool_call_id.into()),
         }
@@ -266,13 +350,13 @@ mod tests {
         memory.load().await.unwrap();
         
         assert_eq!(memory.len(), 2);
-        assert_eq!(memory.get_messages()[0].content, "Hi");
+        assert_eq!(memory.get_messages()[0].content.as_str(), Some("Hi"));
     }
     
     #[test]
     fn test_message_creation() {
         let msg = Message::user("test");
         assert_eq!(msg.role, "user");
-        assert_eq!(msg.content, "test");
+        assert_eq!(msg.content.as_str(), Some("test"));
     }
 }
