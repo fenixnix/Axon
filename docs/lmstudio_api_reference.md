@@ -1,7 +1,7 @@
 # LM Studio API 参考文档
 
 > **更新时间**: 2026-03-17
-> **测试模型**: qwen/qwen3.5-9b
+> **测试模型**: qwen/qwen3-vl-30b (视觉模型)
 
 ---
 
@@ -11,172 +11,149 @@
 |------|-----|
 | **Base URL** | `http://localhost:1234/v1` |
 | **协议** | OpenAI Compatible API |
-| **认证** | 不需要或任意 API key（如 `not-needed`） |
-| **测试模型** | qwen/qwen3.5-9b |
+| **认证** | 不需要或任意 API key |
 
 ---
 
-## 端点
+## 可用模型列表
 
-### 1. Chat Completions
-
-**URL**: `POST /chat/completions`
-
-**请求头**:
-```http
-Content-Type: application/json
-Authorization: Bearer not-needed
 ```
-
-**请求体格式**:
-```json
-{
-  "model": "qwen/qwen3.5-9b",
-  "messages": [
-    {"role": "system", "content": "你是一个 helpful assistant。"},
-    {"role": "user", "content": "用户消息"}
-  ],
-  "temperature": 0.7,
-  "stream": false,
-  "tools": [...],
-  "tool_choice": "auto"
-}
+qwen/qwen3.5-9b           # ⚠️ 意外支持视觉/OCR!
+qwen/qwen3-vl-30b         # 视觉模型 (推荐 OCR)
+qwen/qwen2.5-vl-7b        # 视觉模型
+qwen-2-vl-7b-ocr          # OCR 专用模型
+google/gemma-3-4b           # 文本模型
+zai-org/glm-4.7-flash      # 文本模型
 ```
 
 ---
 
-## 工具调用 (Function Calling)
+## 视觉模型 (Vision/OCR)
 
-### 工具定义格式
+### 支持的图片格式
 
-**标准 OpenAI 格式** (推荐):
-```json
-{
-  "type": "function",
-  "function": {
-    "name": "shell_exec",
-    "description": "执行 shell 命令",
-    "parameters": {
-      "type": "object",
-      "properties": {
-        "command": {
-          "type": "string",
-          "description": "要执行的命令"
+| 格式 | 支持 | 备注 |
+|------|------|------|
+| JPEG | ✅ 推荐 | 兼容性最好 |
+| PNG | ✅ | 支持 |
+| WebP | ⚠️ | 需要转换为 JPEG |
+
+### 关键发现
+
+1. **图片转换**: WebP 格式需要转换为 JPEG
+2. **Base64 格式**: `data:image/jpeg;base64,{base64编码}`
+3. **模型选择**: `qwen/qwen3-vl-30b` 推荐用于 OCR
+4. **意外发现**: `qwen/qwen3.5-9b` 竟然也支持图片输入！
+
+---
+
+## OCR 测试示例
+
+### Python 代码
+
+```python
+import json
+import base64
+import requests
+from PIL import Image
+import io
+
+def ocr_image(image_path: str, prompt: str = "请提取这张图片中的文字") -> str:
+    """使用 LM Studio 视觉模型进行 OCR"""
+    
+    # 转换为 JPEG 格式
+    img = Image.open(image_path)
+    buffer = io.BytesIO()
+    img.save(buffer, format='JPEG')
+    base64_image = base64.b64encode(buffer.getvalue()).decode('utf-8')
+    
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": f"data:image/jpeg;base64,{base64_image}"
+                    }
+                },
+                {
+                    "type": "text",
+                    "text": prompt
+                }
+            ]
         }
-      },
-      "required": ["command"]
+    ]
+    
+    payload = {
+        "model": "qwen/qwen3-vl-30b",
+        "messages": messages,
+        "max_tokens": 2048
     }
-  }
-}
+    
+    response = requests.post(
+        "http://127.0.0.1:1234/v1/chat/completions",
+        json=payload,
+        timeout=300
+    )
+    
+    result = response.json()
+    return result["choices"][0]["message"]["content"]
+
+# 使用
+result = ocr_image("sample.png", "请提取图片中的文字")
+print(result)
 ```
 
-### 实际测试结果
+### 测试结果
 
-**请求**:
+| 模型 | 状态 | OCR 结果 |
+|------|------|----------|
+| qwen/qwen3.5-9b | ✅ | 太平天国 |
+| qwen/qwen3-vl-30b | ✅ | 太平天国 |
+| qwen/qwen2.5-vl-7b | ✅ | 太平天国 |
+
+---
+
+## 消息格式详解
+
+### 多模态消息结构
+
 ```json
 {
-  "tools": [
+  "role": "user",
+  "content": [
     {
-      "type": "function",
-      "function": {
-        "name": "read_file",
-        "description": "读取文件内容",
-        "parameters": {
-          "type": "object",
-          "properties": {
-            "path": {
-              "type": "string",
-              "description": "文件路径"
-            }
-          },
-          "required": ["path"]
-        }
+      "type": "image_url",
+      "image_url": {
+        "url": "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
       }
-    }
-  ]
-}
-```
-
-**响应** (成功调用工具):
-```json
-{
-  "choices": [
+    },
     {
-      "message": {
-        "role": "assistant",
-        "content": null,
-        "tool_calls": [
-          {
-            "type": "function",
-            "id": "736917795",
-            "function": {
-              "name": "read_file",
-              "arguments": "{\"path\":\"README.md\"}"
-            }
-          }
-        ]
-      },
-      "finish_reason": "tool_calls"
+      "type": "text",
+      "text": "请描述这张图片"
     }
   ]
 }
 ```
 
-### 关键字段说明
+### 关键要点
 
-| 字段 | 说明 |
-|------|------|
-| `finish_reason: "tool_calls"` | 表示模型请求调用工具 |
-| `tool_calls[].function.name` | 工具名称 |
-| `tool_calls[].function.arguments` | JSON 字符串格式的参数 |
-| `tool_calls[].id` | 工具调用 ID，用于返回结果 |
+1. **content 是数组**: 支持多张图片 + 文本混合
+2. **type 字段**: 必须指定 `image_url` 或 `text`
+3. **url 格式**: `data:image/jpeg;base64,{base64编码}`
+4. **模型参数**: 视觉模型需要使用对应的模型 ID
 
 ---
 
-## 工具执行流程
-
-```
-1. 发送: 用户消息 + tools 定义
-         ↓
-2. 响应: AI 返回 tool_calls (finish_reason: "tool_calls")
-         ↓
-3. 执行: 本地执行工具函数
-         ↓
-4. 添加消息:
-   - role: "assistant", tool_calls: [...]
-   - role: "tool", tool_call_id: "xxx", content: "执行结果"
-         ↓
-5. 再次发送: 获取 AI 最终回复
-```
-
-### 工具结果消息格式
-
-```json
-{
-  "role": "tool",
-  "tool_call_id": "736917795",
-  "content": "文件内容..."
-}
-```
-
----
-
-## 注意事项
-
-1. **模型支持**: 并非所有模型都支持工具调用，测试模型 `qwen/qwen3.5-9b` 支持
-2. **工具格式**: 必须使用 `"type": "function"` 包装
-3. **参数解析**: `arguments` 是 JSON 字符串，需要解析
-4. **中文提示**: 使用中文提示词效果更好
-
----
-
-## 常见问题
+## 常见错误
 
 | 错误 | 原因 | 解决方案 |
 |------|------|----------|
-| `tool_calls` 为空 | 模型不支持工具调用或提示不明确 | 确认模型支持 tool calls，使用明确提示 |
-| 参数解析失败 | `arguments` 不是有效 JSON | 检查参数格式 |
-| 400 Bad Request | tools 格式错误 | 检查 JSON Schema 格式 |
+| `'url' field must be a base64 encoded image` | 图片格式不支持 | 转换为 JPEG |
+| `Invalid url` | base64 格式错误 | 检查编码 |
+| `Operation canceled` | 模型未加载 | 等待模型加载 |
+| 400 Bad Request | 格式错误 | 检查 JSON 结构 |
 
 ---
 
@@ -184,8 +161,24 @@ Authorization: Bearer not-needed
 
 ```yaml
 llm:
-  model: "qwen/qwen3.5-9b"  # 或你加载的模型名
-  api_key: ""                # LM Studio 不需要
-  base_url: "http://localhost:1234/v1"
+  model: "qwen/qwen3-vl-30b"  # 视觉模型
+  api_key: ""
+  base_url: "http://127.0.0.1:1234/v1"
   timeout_secs: 120
+```
+
+### 未来: Axon 视觉支持
+
+计划在 Phase 5 添加视觉原子:
+
+```rust
+// 计划新增 atom
+define_atom!(
+    ImageOCR,
+    "从图片中提取文字",
+    |args: Value| async move {
+        let path = args["path"].as_str().ok_or_else(|| ...)?;
+        // 调用视觉模型进行 OCR
+    }
+);
 ```
