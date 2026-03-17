@@ -97,6 +97,14 @@ impl LlmClient {
             request.tools = Some(t.to_vec());
         }
         
+        // Debug: print request body
+        #[cfg(debug_assertions)]
+        {
+            if let Ok(json) = serde_json::to_string_pretty(&request) {
+                eprintln!("[DEBUG] LLM Request:\n{}", json);
+            }
+        }
+        
         let response = self.client
             .post(&url)
             .header("Content-Type", "application/json")

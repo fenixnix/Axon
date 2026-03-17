@@ -28,6 +28,29 @@ zai-org/glm-4.7-flash      # 文本模型
 
 ---
 
+## 端点
+
+### 1. Chat Completions
+
+**URL**: `POST /chat/completions`
+
+**请求体格式**:
+```json
+{
+  "model": "model-name",
+  "messages": [
+    {"role": "system", "content": "系统提示"},
+    {"role": "user", "content": "用户消息"}
+  ],
+  "temperature": 0.7,
+  "stream": false,
+  "tools": [...],      // 可选
+  "tool_choice": "auto" // 可选: "auto", "none", 或特定工具
+}
+```
+
+---
+
 ## 视觉模型 (Vision/OCR)
 
 ### 支持的图片格式
@@ -182,3 +205,114 @@ define_atom!(
     }
 );
 ```
+
+---
+
+## 2. Tools 格式
+
+**标准 OpenAI 格式**:
+```json
+{
+  "type": "function",
+  "function": {
+    "name": "function_name",
+    "description": "函数描述",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "param1": {
+          "type": "string",
+          "description": "参数描述"
+        }
+      },
+      "required": ["param1"]
+    }
+  }
+}
+```
+
+---
+
+## 3. 响应格式
+
+**普通响应**:
+```json
+{
+  "id": "chatcmpl-xxx",
+  "object": "chat.completion",
+  "created": 1234567890,
+  "model": "model-name",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "回复内容"
+      },
+      "finish_reason": "stop"
+    }
+  ]
+}
+```
+
+**带工具调用的响应**:
+```json
+{
+  "choices": [
+    {
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_xxx",
+            "type": "function",
+            "function": {
+              "name": "function_name",
+              "arguments": "{\"param1\": \"value1\"}"
+            }
+          }
+        ]
+      },
+      "finish_reason": "tool_calls"
+    }
+  ]
+}
+```
+
+---
+
+## 4. 工具执行流程
+
+1. 发送用户消息 + tools 定义
+2. 接收 AI 响应，检查是否包含 `tool_calls`
+3. 执行工具函数，获取结果
+4. 将工具结果添加到消息历史：
+   - 添加 assistant 消息（包含 tool_calls）
+   - 添加 tool 消息（包含执行结果）
+5. 再次发送请求获取最终回复
+
+**工具消息格式**:
+```json
+{
+  "role": "tool",
+  "tool_call_id": "call_xxx",
+  "content": "工具执行结果"
+}
+```
+
+---
+
+## 注意事项
+
+1. 不是所有模型都支持工具调用
+2. 工具定义必须使用 `"type": "function"` 包装
+3. `function.parameters` 必须符合 JSON Schema
+4. 工具调用参数是 JSON 字符串，需要解析
+5. LM Studio 的兼容性取决于加载的模型
+
+## 常见错误
+
+- `400 Bad Request`: 请求格式错误，检查 tools 格式
+- `tool_calls` 为空: 模型不支持工具或提示不够明确
+- 参数解析失败: 检查 `arguments` 字段是否为有效 JSON

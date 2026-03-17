@@ -83,30 +83,38 @@ impl Executor {
         }
         
         // Check for tool calls
-        if let Some(ref tool_calls) = response.tool_calls
-            && !tool_calls.is_empty() {
-            let results = self.execute_tools(tool_calls.clone()).await;
-            
-            // Add tool results to memory
-            for (i, result) in results.iter().enumerate() {
-                let tool_call_id = tool_calls.get(i)
-                    .map(|tc| tc.id.clone())
-                    .unwrap_or_default();
-                let msg = Message::tool(tool_call_id, result.output.to_string());
-                let mut memory = self.memory.lock().await;
-                memory.add_message(msg.clone());
-                memory.append(&msg).await
-                    .map_err(|e| ExecutorError::MemoryError(e.to_string()))?;
+        if let Some(ref tool_calls) = response.tool_calls {
+            if !tool_calls.is_empty() {
+                eprintln!("[DEBUG] Detected {} tool calls", tool_calls.len());
+                for tc in tool_calls.iter() {
+                    eprintln!("[DEBUG] Tool call: {}({})", tc.name(), tc.function.arguments);
+                }
+                
+                let results = self.execute_tools(tool_calls.clone()).await;
+                
+                // Add tool results to memory
+                for (i, result) in results.iter().enumerate() {
+                    let tool_call_id = tool_calls.get(i)
+                        .map(|tc| tc.id.clone())
+                        .unwrap_or_default();
+                    let msg = Message::tool(tool_call_id, result.output.to_string());
+                    eprintln!("[DEBUG] Tool result: {}", msg.content);
+                    let mut memory = self.memory.lock().await;
+                    memory.add_message(msg.clone());
+                    memory.append(&msg).await
+                        .map_err(|e| ExecutorError::MemoryError(e.to_string()))?;
+                }
+                
+                // Continue conversation with tool results
+                let context = {
+                    let memory = self.memory.lock().await;
+                    memory.get_context(20)
+                };
+                
+                eprintln!("[DEBUG] Sending follow-up request with tool results...");
+                let final_response = self.llm.chat(&context, None).await?;
+                return Ok(final_response.content);
             }
-            
-            // Continue conversation with tool results
-            let context = {
-                let memory = self.memory.lock().await;
-                memory.get_context(20)
-            };
-            
-            let final_response = self.llm.chat(&context, None).await?;
-            return Ok(final_response.content);
         }
         
         Ok(response.content)
