@@ -1,0 +1,24 @@
+# Axon Configuration - LM Studio
+
+core:
+  name: "Axon"
+  version: "2.0.0"
+
+llm:
+  model: "local-model"  # Replace with your LM Studio model name
+  api_key: ""          # LM Studio doesn't require API key
+  base_url: "http://localhost:1234/v1"
+  timeout_secs: 120
+
+system:
+  persona: |
+    You are Axon, a high-speed neural conduit written in Rust.
+    Execute tools efficiently. Report errors clearly.
+    Think step by step when needed.
+    You have access to shell commands and file operations.
+
+atoms:
+  active:
+    - shell_exec
+    - file_read
+    - file_write

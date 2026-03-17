@@ -1,0 +1,43 @@
+[package]
+name = "axon"
+version = "2.0.0"
+edition = "2024"
+authors = ["Axon Team"]
+description = "A biological-inspired CLI agent in Rust"
+license = "MIT"
+
+[dependencies]
+# Async Runtime
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.9"
+serde_json = "1"
+
+# HTTP Client for LLM
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+crossterm = "0.28"
+colored = "2"
+
+# Error Handling
+anyhow = "1"
+thiserror = "1"
+
+# Utilities
+uuid = { version = "1", features = ["v4"] }
+chrono = "0.4"
+async-trait = "0.1"
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

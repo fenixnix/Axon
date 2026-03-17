@@ -1,0 +1,35 @@
+# Rust build artifacts
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.ruff_cache/
+.pytest_cache/
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+
+# Memory and config (may contain sensitive data)
+memory.jsonl
+config-local.yaml

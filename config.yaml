@@ -1,0 +1,23 @@
+# Axon Configuration
+
+core:
+  name: "Axon"
+  version: "2.0.0"
+
+llm:
+  model: "gpt-4o-mini"
+  api_key: "${OPENAI_API_KEY}"
+  base_url: "https://api.openai.com/v1"
+  timeout_secs: 60
+
+system:
+  persona: |
+    You are Axon, a high-speed neural conduit written in Rust.
+    Execute tools efficiently. Report errors clearly.
+    Think step by step when needed.
+
+atoms:
+  active:
+    - shell_exec
+    - file_read
+    - file_write
