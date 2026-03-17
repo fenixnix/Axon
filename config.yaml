@@ -5,9 +5,9 @@ core:
   version: "2.0.0"
 
 llm:
-  model: "gpt-4o-mini"
-  api_key: "${OPENAI_API_KEY}"
-  base_url: "https://api.openai.com/v1"
+  model: "qwen/qwen3.5-9b"
+  api_key: "lm-studio"
+  base_url: "http://localhost:1234/v1"
   timeout_secs: 60
 
 system:
