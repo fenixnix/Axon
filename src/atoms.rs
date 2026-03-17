@@ -176,16 +176,23 @@ impl Atom for ShellExec {
             .as_str()
             .ok_or_else(|| AtomError::InvalidArgs("Missing 'command' parameter".to_string()))?;
         
-        // Split command for safety
-        let parts: Vec<&str> = command.split_whitespace().collect();
-        if parts.is_empty() {
+        if command.trim().is_empty() {
             return Ok(serde_json::json!({
                 "error": "Empty command"
             }));
         }
         
-        let output = tokio::process::Command::new(parts[0])
-            .args(&parts[1..])
+        // Use shell to execute command for better cross-platform support
+        #[cfg(windows)]
+        let output = tokio::process::Command::new("cmd")
+            .args(&["/c", command])
+            .output()
+            .await
+            .map_err(|e| AtomError::ExecutionFailed(e.to_string()))?;
+        
+        #[cfg(not(windows))]
+        let output = tokio::process::Command::new("sh")
+            .args(&["-c", command])
             .output()
             .await
             .map_err(|e| AtomError::ExecutionFailed(e.to_string()))?;
