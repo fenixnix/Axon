@@ -8,6 +8,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   BIN_NAME: axon
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   ci:
