@@ -4,49 +4,85 @@ on:
   push:
     tags:
       - 'v*'
-  release:
-    types: [published]
 
 env:
   CARGO_TERM_COLOR: always
+  BIN_NAME: axon
 
 jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: swatinem/rust-cache@v2
+
+      - name: Check formatting
+        run: cargo fmt -- --check
+
+      - name: Run clippy
+        run: cargo clippy -- -D warnings
+
+      - name: Run tests
+        run: cargo test --all-features
+
   build:
+    needs: ci
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
+            ext: tar.gz
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            ext: zip
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
 
-      - name: Add target
-        run: rustup target add ${{ matrix.target }}
+      - uses: swatinem/rust-cache@v2
 
       - name: Build release
-        run: cargo build --release --locked
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Package
+        shell: bash
+        run: |
+          cd target/${{ matrix.target }}/release
+          EXT="${{ matrix.ext }}"
+          
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            powershell -Command "Compress-Archive -Path ${env:BIN_NAME}.exe -DestinationPath ../../../${env:BIN_NAME}-${GITHUB_REF#refs/tags/v}-${TARGET}.${EXT}"
+          else
+            tar czvf ../../../${env:BIN_NAME}-${GITHUB_REF#refs/tags/v}-${TARGET}.${EXT} ${env:BIN_NAME}
+          fi
+        env:
+          TARGET: ${{ matrix.target }}
+          GITHUB_REF: ${{ github.ref }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: axon-${{ matrix.os }}
-          path: ${{ matrix.os == 'windows-latest' && 'target/release/axon.exe' || 'target/release/axon' }}
+          name: ${{ env.BIN_NAME }}-${{ matrix.target }}
+          path: ${{ env.BIN_NAME }}-*${{ matrix.ext }}
 
   release:
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'release'
+    permissions:
+      contents: write
 
     steps:
       - name: Download all artifacts
