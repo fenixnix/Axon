@@ -312,4 +312,75 @@ axon exec "@web-search 最新的 Rust 特性"
 | [docs/design.md](docs/design.md) | 完整技术规范 (英文) |
 | [docs/design_zh.md](docs/design_zh.md) | 技术规范 (中文) |
 | [docs/spec_modules.md](docs/spec_modules.md) | 模块设计详情 |
-| [docs/spec_tasks.md
+| [docs/spec_tasks.md](docs/spec_tasks.md) | 任务清单 & 路线图 |
+| [docs/spec_acceptance.md](docs/spec_acceptance.md) | 验收标准 |
+| [AGENTS.md](AGENTS.md) | 开发指南 |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | 贡献指南 |
+
+---
+
+## 🛣️ 路线图
+
+- [ ] **WASM 支持** — 在浏览器和边缘环境运行
+- [ ] **插件系统** — 动态加载自定义原子
+- [ ] **eBPF 集成** — 内核级系统监控
+- [ ] **GUI 界面** — 可选的桌面应用程序
+- [ ] **云部署** — 无服务器函数支持
+
+---
+
+## 🤝 贡献
+
+我们欢迎贡献！请参阅我们的 [贡献指南](CONTRIBUTING.md) 了解详情。
+
+### 贡献者快速开始
+
+```bash
+# Fork 并克隆
+git clone https://github.com/your-username/Axon.git
+cd Axon
+
+# 创建分支
+git checkout -b feature/amazing-feature
+
+# 修改并提交
+cargo fmt
+cargo clippy -- -D warnings
+cargo test
+git commit -m "feat: 添加 amazing 特性"
+
+# 推送并创建 PR
+git push origin feature/amazing-feature
+```
+
+---
+
+## 💬 社区
+
+- 💡 [Discussions](https://github.com/fenixnix/Axon/discussions) — 提问、分享想法
+- 🐛 [Issues](https://github.com/fenixnix/Axon/issues) — 报告 bug、请求功能
+- 📖 [Wiki](https://github.com/fenixnix/Axon/wiki) — 社区文档
+
+---
+
+## 📄 许可证
+
+本项目采用 [MIT 许可证](LICENSE)。
+
+---
+
+## 🙏 致谢
+
+- 使用 [Rust](https://www.rust-lang.org/) 构建 🦀
+- 异步运行时由 [Tokio](https://tokio.rs/) 提供支持
+- CLI 框架由 [Clap](https://github.com/clap-rs/clap) 提供
+
+---
+
+<p align="center">
+  <sub>用 ❤️ 由 Axon 团队构建</sub>
+</p>
+
+<p align="center">
+  <i>"内存安全与神经速度并存。"</i>
+</p>
