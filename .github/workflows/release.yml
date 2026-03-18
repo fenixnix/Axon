@@ -58,6 +58,7 @@ jobs:
         run: cargo build --release --locked --target ${{ matrix.target }}
 
       - name: Verify binary exists
+        shell: bash
         run: |
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             BIN_PATH="target/${{ matrix.target }}/release/${{ env.BIN_NAME }}.exe"
@@ -78,13 +79,10 @@ jobs:
           EXT="${{ matrix.ext }}"
           
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
-            powershell -Command "Compress-Archive -Path ${env:BIN_NAME}.exe -DestinationPath ../../../${env:BIN_NAME}-${GITHUB_REF#refs/tags/v}-${TARGET}.${EXT}"
+            powershell -Command "Compress-Archive -Path axon.exe -DestinationPath ../../../axon-${{ github.ref_name }}-${{ matrix.target }}.${EXT}"
           else
-            tar czvf ../../../${env:BIN_NAME}-${GITHUB_REF#refs/tags/v}-${TARGET}.${EXT} ${env:BIN_NAME}
+            tar czvf ../../../axon-${{ github.ref_name }}-${{ matrix.target }}.${EXT} ./axon
           fi
-        env:
-          TARGET: ${{ matrix.target }}
-          GITHUB_REF: ${{ github.ref }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
