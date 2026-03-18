@@ -59,11 +59,17 @@ jobs:
 
       - name: Verify binary exists
         run: |
-          if [[ ! -f "target/${{ matrix.target }}/release/${{ env.BIN_NAME }}" ]]; then
-            echo "Binary not found!"
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+            BIN_PATH="target/${{ matrix.target }}/release/${{ env.BIN_NAME }}.exe"
+          else
+            BIN_PATH="target/${{ matrix.target }}/release/${{ env.BIN_NAME }}"
+          fi
+          if [[ ! -f "$BIN_PATH" ]]; then
+            echo "Binary not found at: $BIN_PATH"
             ls -la target/${{ matrix.target }}/release/
             exit 1
           fi
+          echo "Binary found: $BIN_PATH"
 
       - name: Package
         shell: bash
