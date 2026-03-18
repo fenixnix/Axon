@@ -1,18 +1,19 @@
 # Axon Specification (Rust Edition)
 
-> **Version**: 2.0.0 (Rust Rewrite)  
-> **Status**: Active Development  
-> **Codename**: The Neural Conduit  
-> **Language**: Rust (Edition 2024+)  
+> **Version**: 0.1.0 (Rust Rewrite)\
+> **Status**: Active Development\
+> **Codename**: The Neural Conduit\
+> **Language**: Rust (Edition 2024+)\
 > **Last Updated**: 2026-03-17
 
----
+***
 
 ## 1. Overview
 
 **Axon** is a high-performance, memory-safe CLI agent written in **Rust**. It serves as the biological-inspired transmission channel between human intent and system execution. By leveraging Rust's zero-cost abstractions and strict type safety, Axon ensures that every "nerve impulse" (command) is transmitted with maximum speed and minimum risk of runtime errors.
 
 ### 1.1 Core Philosophy
+
 - **Safety First**: Memory safety without garbage collection. No segfaults, no data races.
 - **Performance**: Near-native execution speed for tool invocation and context processing.
 - **Biological Metaphor**: Architecture mimics neural structures (Stimulus → Axon → Response).
@@ -20,13 +21,14 @@
 - **Type-Safe Atoms**: Skills are strongly typed Rust functions, preventing invalid argument injection at compile time where possible.
 
 ### 1.2 Key Features
+
 - ⚡ **Zero-Latency Startup**: Compiled binary starts instantly, no interpreter overhead.
 - 🛡️ **Memory Safety**: Leveraging Rust's ownership model to prevent buffer overflows and leaks.
 - 🧬 **Macro-Based Atoms**: Define skills using Rust macros for clean, declarative syntax.
 - 📜 **Async I/O**: Built on `tokio` for non-blocking tool execution and concurrent API calls.
 - 🧠 **LLM Agnostic**: Uses `reqwest` and `serde` for flexible LLM provider integration.
 
----
+***
 
 ## 2. Architecture
 
@@ -46,17 +48,17 @@ graph LR
 
 ### 2.1 Components
 
-| Component | Biological Analog | Rust Implementation | Crate/Module |
-| :--- | :--- | :--- | :--- |
-| **Stimulus** | External Stimulus | `std::io::stdin` with `crossterm` or `ratatui` | `cli` |
-| **Dendrite** | Dendrites | Input parser, Context loader | `memory` |
-| **Soma** | Cell Body | Async core logic, State machine | `core` |
-| **Axon** | Axon | Task router, Executor | `executor` |
-| **Atoms** | Synapses/Effectors | Trait-based skills, Macros | `atoms` |
-| **Memory** | Neural Trace | Append-only JSONL via `tokio::fs` | `memory` |
-| **Genome** | DNA | Config parsing via `serde` | `config` |
+| Component    | Biological Analog  | Rust Implementation                            | Crate/Module |
+| :----------- | :----------------- | :--------------------------------------------- | :----------- |
+| **Stimulus** | External Stimulus  | `std::io::stdin` with `crossterm` or `ratatui` | `cli`        |
+| **Dendrite** | Dendrites          | Input parser, Context loader                   | `memory`     |
+| **Soma**     | Cell Body          | Async core logic, State machine                | `core`       |
+| **Axon**     | Axon               | Task router, Executor                          | `executor`   |
+| **Atoms**    | Synapses/Effectors | Trait-based skills, Macros                     | `atoms`      |
+| **Memory**   | Neural Trace       | Append-only JSONL via `tokio::fs`              | `memory`     |
+| **Genome**   | DNA                | Config parsing via `serde`                     | `config`     |
 
----
+***
 
 ## 3. Project Structure
 
@@ -109,7 +111,7 @@ uuid = { version = "1", features = ["v4"] }
 chrono = "0.4"
 ```
 
----
+***
 
 ## 4. Detailed Specifications
 
@@ -139,6 +141,7 @@ atoms:
 ```
 
 **Rust Struct Definition (`src/config.rs`):**
+
 ```rust
 use serde::Deserialize;
 
@@ -164,6 +167,7 @@ pub struct CoreConfig {
 In Rust, "Atoms" are defined via a trait and registered using a macro for ease of use. This ensures type safety and clean registration.
 
 **Trait Definition:**
+
 ```rust
 use anyhow::Result;
 use serde_json::Value;
@@ -180,6 +184,7 @@ pub trait Atom: Send + Sync {
 ```
 
 **Macro for Registration:**
+
 ```rust
 #[macro_export]
 macro_rules! define_atom {
@@ -249,16 +254,17 @@ define_atom!(
 The main loop uses `tokio` for async execution, ensuring the CLI never freezes during network or I/O operations.
 
 **Core Logic Flow:**
-1.  **Init**: Load `config.yaml` and initialize the `AtomRegistry`.
-2.  **Loop**: 
-    -   Read user input (non-blocking).
-    -   Load `memory.jsonl` into a `Vec<Message>`.
-    -   Call LLM (via `reqwest`).
-    -   **Pattern Match**:
-        -   If `content`: Print to stdout.
-        -   If `tool_calls`: Iterate and `spawn` tasks for each atom.
-    -   **Aggregate**: Collect results and send back to LLM.
-    -   **Persist**: Append all messages to `memory.jsonl`.
+
+1. **Init**: Load `config.yaml` and initialize the `AtomRegistry`.
+2. **Loop**:
+   - Read user input (non-blocking).
+   - Load `memory.jsonl` into a `Vec<Message>`.
+   - Call LLM (via `reqwest`).
+   - **Pattern Match**:
+     - If `content`: Print to stdout.
+     - If `tool_calls`: Iterate and `spawn` tasks for each atom.
+   - **Aggregate**: Collect results and send back to LLM.
+   - **Persist**: Append all messages to `memory.jsonl`.
 
 **Error Handling**:
 Uses `anyhow` for application-level errors and `thiserror` for library-level specific errors, ensuring robust failure reporting without panics.
@@ -415,27 +421,27 @@ Output: Complete code review report
 
 #### 4.5.4 Field Description
 
-| Field | Required | Description |
-| :--- | :---: | :--- |
-| `name` | ✅ | Skill name (lowercase letters, numbers, hyphens) |
-| `description` | ✅ | Brief description, used by LLM to determine when to activate |
-| `instructions` | ✅ | Detailed workflow and operation guide |
-| `allowed-tools` | ❌ | List of tools the skill can use |
-| `version` | ❌ | Semantic version number |
-| `author` | ❌ | Author information |
-| `examples` | ❌ | Usage examples |
+| Field           | Required | Description                                                  |
+| :-------------- | :------: | :----------------------------------------------------------- |
+| `name`          |     ✅    | Skill name (lowercase letters, numbers, hyphens)             |
+| `description`   |     ✅    | Brief description, used by LLM to determine when to activate |
+| `instructions`  |     ✅    | Detailed workflow and operation guide                        |
+| `allowed-tools` |     ❌    | List of tools the skill can use                              |
+| `version`       |     ❌    | Semantic version number                                      |
+| `author`        |     ❌    | Author information                                           |
+| `examples`      |     ❌    | Usage examples                                               |
 
 #### 4.5.5 Supported Tool Types
 
-| Tool | Description |
-| :--- | :--- |
-| `read` | Read file content |
-| `write` | Write/create files |
-| `bash` | Execute shell commands |
-| `glob` | Filename pattern matching |
-| `grep` | Text search |
-| `edit` | File editing (incremental changes) |
-| `multifile` | Batch file operations |
+| Tool        | Description                        |
+| :---------- | :--------------------------------- |
+| `read`      | Read file content                  |
+| `write`     | Write/create files                 |
+| `bash`      | Execute shell commands             |
+| `glob`      | Filename pattern matching          |
+| `grep`      | Text search                        |
+| `edit`      | File editing (incremental changes) |
+| `multifile` | Batch file operations              |
 
 #### 4.5.6 Skill Loader Implementation
 
@@ -546,21 +552,22 @@ axon exec "use @git-workflow to commit code"
 
 Axon provides the following built-in Skills:
 
-| Skill Name | Description | Trigger Condition |
-| :--- | :--- | :--- |
-| `shell-exec` | Shell command execution | User requests to execute system commands |
-| `file-read` | File reading | User requests to view file content |
-| `file-write` | File writing | User requests to create or modify files |
-| `code-review` | Code review | User requests code review |
-| `git-workflow` | Git workflow | User requests commit, push, etc. |
+| Skill Name     | Description             | Trigger Condition                        |
+| :------------- | :---------------------- | :--------------------------------------- |
+| `shell-exec`   | Shell command execution | User requests to execute system commands |
+| `file-read`    | File reading            | User requests to view file content       |
+| `file-write`   | File writing            | User requests to create or modify files  |
+| `code-review`  | Code review             | User requests code review                |
+| `git-workflow` | Git workflow            | User requests commit, push, etc.         |
 
----
+***
 
 ## 5. Installation & Build
 
 ### 5.1 Prerequisites
--   **Rust Toolchain**: `rustup` (Install from rust-lang.org)
--   **Compiler**: Rust 1.75+ (Edition 2024 support)
+
+- **Rust Toolchain**: `rustup` (Install from rust-lang.org)
+- **Compiler**: Rust 1.75+ (Edition 2024 support)
 
 ### 5.2 Build Instructions
 
@@ -586,9 +593,9 @@ export OPENAI_API_KEY="sk-..."
 ./target/release/axon
 ```
 
-**Performance Note**: The release build is stripped and optimized (`-O3`), resulting in a binary size of ~5-10MB with startup time <10ms.
+**Performance Note**: The release build is stripped and optimized (`-O3`), resulting in a binary size of \~5-10MB with startup time <10ms.
 
----
+***
 
 ## 5.4 CLI Command Arguments
 
@@ -596,17 +603,17 @@ Axon provides the following command-line options and subcommands:
 
 ### Global Options
 
-| Argument | Short | Description | Default |
-| :--- | :---: | :--- | :--- |
-| `--config` | `-c` | Specify config file path | `config.yaml` |
-| `--memory` | `-m` | Specify memory file path | `memory.jsonl` |
-| `--model` | `-M` | Override LLM model in config | none |
-| `--api-key` | `-k` | Override API key in config | none |
-| `--no-memory` | | Disable memory (don't load/save) | `false` |
-| `--verbose` | `-v` | Enable verbose output | `false` |
-| `--quiet` | `-q` | Quiet mode, output only results | `false` |
-| `--version` | | Show version and exit | - |
-| `--help` | `-h` | Show help information | - |
+| Argument      |  Short | Description                      | Default        |
+| :------------ | :----: | :------------------------------- | :------------- |
+| `--config`    |  `-c`  | Specify config file path         | `config.yaml`  |
+| `--memory`    |  `-m`  | Specify memory file path         | `memory.jsonl` |
+| `--model`     |  `-M`  | Override LLM model in config     | none           |
+| `--api-key`   |  `-k`  | Override API key in config       | none           |
+| `--no-memory` | <br /> | Disable memory (don't load/save) | `false`        |
+| `--verbose`   |  `-v`  | Enable verbose output            | `false`        |
+| `--quiet`     |  `-q`  | Quiet mode, output only results  | `false`        |
+| `--version`   | <br /> | Show version and exit            | -              |
+| `--help`      |  `-h`  | Show help information            | -              |
 
 ### Subcommands
 
@@ -616,8 +623,8 @@ Axon provides the following command-line options and subcommands:
 axon run [OPTIONS]
 ```
 
-| Argument | Description |
-| :--- | :--- |
+| Argument   | Description             |
+| :--------- | :---------------------- |
 | `--system` | Override system persona |
 
 #### `exec` - Single Command Execution
@@ -626,10 +633,10 @@ axon run [OPTIONS]
 axon exec <command> [OPTIONS]
 ```
 
-| Argument | Short | Description |
-| :--- | :---: | :--- |
-| `<command>` | | Command to execute (required) |
-| `--stream` | `-s` | Stream output response |
+| Argument    |  Short | Description                   |
+| :---------- | :----: | :---------------------------- |
+| `<command>` | <br /> | Command to execute (required) |
+| `--stream`  |  `-s`  | Stream output response        |
 
 #### `chat` - Chat Mode
 
@@ -637,10 +644,10 @@ axon exec <command> [OPTIONS]
 axon chat [OPTIONS]
 ```
 
-| Argument | Description |
-| :--- | :--- |
+| Argument     | Description                    |
+| :----------- | :----------------------------- |
 | `--continue` | Continue previous conversation |
-| `--clear` | Clear conversation history |
+| `--clear`    | Clear conversation history     |
 
 #### `atom` - Atom Management
 
@@ -648,11 +655,11 @@ axon chat [OPTIONS]
 axon atom <subcommand>
 ```
 
-| Subcommand | Description |
-| :--- | :--- |
-| `list` | List all available atoms |
-| `info <name>` | Show atom details |
-| `register <path>` | Register custom atom |
+| Subcommand        | Description              |
+| :---------------- | :----------------------- |
+| `list`            | List all available atoms |
+| `info <name>`     | Show atom details        |
+| `register <path>` | Register custom atom     |
 
 #### `memory` - Memory Management
 
@@ -660,11 +667,11 @@ axon atom <subcommand>
 axon memory <subcommand>
 ```
 
-| Subcommand | Description |
-| :--- | :--- |
-| `show` | Show memory content |
-| `clear` | Clear all memory |
-| `export <file>` | Export memory to file |
+| Subcommand      | Description             |
+| :-------------- | :---------------------- |
+| `show`          | Show memory content     |
+| `clear`         | Clear all memory        |
+| `export <file>` | Export memory to file   |
 | `import <file>` | Import memory from file |
 
 ### Usage Examples
@@ -689,18 +696,19 @@ axon atom info shell_exec
 axon chat --clear
 ```
 
----
+***
 
 ## 6. Security Considerations (Rust Specific)
 
 While Rust prevents memory safety vulnerabilities, logical security remains critical:
 
-1.  **Command Injection**: The `ShellExec` atom must carefully parse arguments. In Rust, prefer `Command::new()` with explicit `.arg()` calls over passing a single string to a shell whenever possible.
-2.  **Path Traversal**: Validate file paths in `FileRead` to prevent accessing sensitive system files (e.g., `/etc/shadow`).
-3.  **Secret Management**: Never hardcode API keys. Use `std::env::var` or secure secret stores.
-4.  **Resource Limits**: Implement timeouts for `tokio::spawn`ed tasks to prevent hanging processes.
+1. **Command Injection**: The `ShellExec` atom must carefully parse arguments. In Rust, prefer `Command::new()` with explicit `.arg()` calls over passing a single string to a shell whenever possible.
+2. **Path Traversal**: Validate file paths in `FileRead` to prevent accessing sensitive system files (e.g., `/etc/shadow`).
+3. **Secret Management**: Never hardcode API keys. Use `std::env::var` or secure secret stores.
+4. **Resource Limits**: Implement timeouts for `tokio::spawn`ed tasks to prevent hanging processes.
 
 **Example Safe Command Execution:**
+
 ```rust
 // Unsafe: Passing full string to shell
 // Command::new("sh").arg("-c").arg(user_input) 
@@ -710,7 +718,7 @@ let mut cmd = Command::new("ls");
 cmd.arg("-la").arg(target_dir); 
 ```
 
----
+***
 
 ## 7. Future Roadmap (Rust)
 
@@ -719,10 +727,11 @@ cmd.arg("-la").arg(target_dir);
 - [ ] **Formal Verification**: Use Rust's type system to prove certain classes of logic errors impossible.
 - [ ] **eBPF Integration**: Direct kernel-level observation capabilities for advanced system monitoring.
 
----
+***
 
 ## 8. License
 
-MIT License. 
+MIT License.
 
 > *"Memory safety meets neural speed."*
+
