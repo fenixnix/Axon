@@ -3,8 +3,13 @@ name = "axon"
 version = "2.0.0"
 edition = "2024"
 authors = ["Axon Team"]
-description = "A biological-inspired CLI agent in Rust"
+description = "A high-performance, memory-safe CLI agent written in Rust"
 license = "MIT"
+repository = "https://github.com/your-org/axon"
+homepage = "https://github.com/your-org/axon"
+keywords = ["cli", "agent", "llm", "ai", "automation", "rust"]
+categories = ["command-line-utilities", "development-tools"]
+rust-version = "1.75"
 
 [dependencies]
 # Async Runtime
