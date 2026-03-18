@@ -21,12 +21,16 @@
 </p>
 
 <p align="center">
-  <strong>使用 Rust 编写的高性能、内存安全的 CLI 代理。</strong>
+  <strong>An AI Agent CLI that thinks, decides, and executes — written in Rust.</strong>
 </p>
 
 <p align="center">
-  Axon 作为人类意图与系统执行之间的生物启发式传输通道。<br>
-  借助 Rust 的零成本抽象和严格类型安全，每一次"神经冲动"（命令）都以最快速度传输，且运行时错误风险最小。
+  <strong>一个能思考、决策并执行的 AI Agent CLI —— 使用 Rust 编写。</strong>
+</p>
+
+<p align="center">
+  Axon 是一个自主 AI Agent，能够理解自然语言、规划任务并执行工具。<br>
+  基于 Rust 构建，具备内存安全和零成本抽象 —— 每一次"神经冲动"（命令）都以最高速度处理。
 </p>
 
 ---
@@ -52,23 +56,23 @@
 <tr>
 <td width="50%">
 
-### 🚀 性能
-- ⚡ **零延迟启动** — 编译后的二进制文件即时启动
-- 🛡️ **内存安全** — Rust 所有权模型防止溢出
-- 📦 **单二进制文件** — 静态部署，无依赖
+### ⚡ 超轻量级
+- 🪶 **迷你体积** — 约 5MB 单文件，无依赖
+- 🚀 **瞬时启动** — 编译后直接运行
+- 🔋 **零状态** — 无守护进程，无后台进程
 
-### 🔧 开发者体验
-- 🧬 **宏驱动的原子** — 简洁、声明式的技能语法
-- 📜 **异步 I/O** — 基于 `tokio` 的非阻塞执行
-- 🔍 **类型安全** — 编译时错误预防
+### 🧠 AI 集成
+- 🧠 **LLM 无关** — 支持 OpenAI、LM Studio 等
+- 💥 **弹仓模式** — 单次发射，用完即释放
+- 🔧 **Claude Code 兼容** — 加载 Claude Code Skill
 
 </td>
 <td width="50%">
 
-### 🧠 AI 集成
-- 🧠 **LLM 无关** — 支持 OpenAI、LM Studio 等
-- 🔧 **Claude Code 兼容** — 加载 Claude Code Skill
-- 💬 **交互式聊天** — 自然语言命令界面
+### 🔧 开发者体验
+- 🧬 **宏驱动的原子** — 简洁、声明式的技能语法
+- 📜 **异步 I/O** — 基于 `tokio` 的非阻塞执行
+- 📋 **命令行友好** — 简洁的参数解析和帮助信息
 
 ### 🛠️ 内置工具
 - 📝 文件读写操作
@@ -130,7 +134,7 @@ cargo build --release
 ```yaml
 core:
   name: "Axon"
-  version: "2.0.0"
+  version: "0.1.0"
 
 llm:
   model: "openai/gpt-4o-mini"
@@ -320,6 +324,16 @@ axon exec "@web-search 最新的 Rust 特性"
 ---
 
 ## 🛣️ 路线图
+
+### 🌐 跨平台版本
+
+- [ ] **C# 版本** — 独立 CLI 工具 + 游戏引擎嵌入库
+  - 独立运行：类似 Rust 版本的 CLI 工具
+  - 嵌入模式：作为库集成到 Godot、Unity 等游戏引擎
+  - 目标平台：Windows、macOS、Linux
+  - 核心特性：对齐 Rust 版本的功能和 API
+
+### 🔧 技术演进
 
 - [ ] **WASM 支持** — 在浏览器和边缘环境运行
 - [ ] **插件系统** — 动态加载自定义原子

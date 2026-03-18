@@ -21,12 +21,12 @@
 </p>
 
 <p align="center">
-  <strong>A high-performance, memory-safe CLI agent written in Rust.</strong>
+  <strong>An AI Agent CLI that thinks, decides, and executes — written in Rust.</strong>
 </p>
 
 <p align="center">
-  Axon serves as a biological-inspired transmission channel between human intent and system execution.<br>
-  With zero-cost abstractions and strict type safety, every "nerve impulse" (command) is transmitted with maximum speed and minimum risk.
+  Axon is an autonomous AI agent that understands natural language, plans tasks, and executes tools.<br>
+  Built with Rust for memory safety and zero-cost abstractions — every "nerve impulse" (command) is processed with maximum speed.
 </p>
 
 ---
@@ -52,23 +52,23 @@
 <tr>
 <td width="50%">
 
-### 🚀 Performance
-- ⚡ **Zero-Latency Startup** — Compiled binary starts instantly
-- 🛡️ **Memory Safety** — Rust ownership model prevents overflows
-- 📦 **Single Binary** — Static deployment, no dependencies
+### ⚡ Ultra-Lightweight
+- 🪶 **Tiny Binary** — ~5MB single executable, no dependencies
+- 🚀 **Instant Start** — Compiled binary runs immediately
+- 🔋 **Zero State** — No daemon, no background process
 
-### 🔧 Developer Experience
-- 🧬 **Macro-Based Atoms** — Clean, declarative skill syntax
-- 📜 **Async I/O** — Non-blocking execution with `tokio`
-- 🔍 **Type-Safe** — Compile-time error prevention
+### 🧠 AI Integration
+- 🧠 **LLM Agnostic** — OpenAI, LM Studio, and more
+- 💥 **Magazine Mode** — Single shot, fire and release
+- 🔧 **Claude Code Compatible** — Load Claude Code Skills
 
 </td>
 <td width="50%">
 
-### 🧠 AI Integration
-- 🧠 **LLM Agnostic** — OpenAI, LM Studio, and more
-- 🔧 **Claude Code Compatible** — Load Claude Code Skills
-- 💬 **Interactive Chat** — Natural language command interface
+### 🔧 Developer Experience
+- 🧬 **Macro-Based Atoms** — Clean, declarative skill syntax
+- 📜 **Async I/O** — Non-blocking execution with `tokio`
+- 📋 **CLI-Friendly** — Clean argument parsing and help messages
 
 ### 🛠️ Built-in Tools
 - 📝 File read/write operations
@@ -130,7 +130,7 @@ Create a `config.yaml` file:
 ```yaml
 core:
   name: "Axon"
-  version: "2.0.0"
+  version: "0.1.0"
 
 llm:
   model: "openai/gpt-4o-mini"
@@ -320,6 +320,16 @@ axon exec "@web-search latest Rust features"
 ---
 
 ## 🛣️ Roadmap
+
+### 🌐 Cross-Platform Versions
+
+- [ ] **C# Version** — Standalone CLI + Game Engine Embeddable Library
+  - Standalone: CLI tool similar to the Rust version
+  - Embeddable: Library integration for Godot, Unity, etc.
+  - Target platforms: Windows, macOS, Linux
+  - Core features: Feature parity with Rust version
+
+### 🔧 Technical Evolution
 
 - [ ] **WASM Support** — Run in browsers and edge environments
 - [ ] **Plugin System** — Dynamic loading of custom atoms
