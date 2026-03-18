@@ -57,6 +57,14 @@ jobs:
       - name: Build release
         run: cargo build --release --locked --target ${{ matrix.target }}
 
+      - name: Verify binary exists
+        run: |
+          if [[ ! -f "target/${{ matrix.target }}/release/${{ env.BIN_NAME }}" ]]; then
+            echo "Binary not found!"
+            ls -la target/${{ matrix.target }}/release/
+            exit 1
+          fi
+
       - name: Package
         shell: bash
         run: |
