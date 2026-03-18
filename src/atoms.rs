@@ -215,7 +215,7 @@ impl Atom for ShellExec {
 
         #[cfg(not(windows))]
         let output = tokio::process::Command::new("sh")
-            .args(&["-c", command])
+            .args(["-c", command])
             .output()
             .await
             .map_err(|e| AtomError::ExecutionFailed(e.to_string()))?;
