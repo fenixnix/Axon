@@ -1,28 +1,28 @@
 //! Executor Module - Axon
-//! 
+//!
 //! Coordinates LLM calls and tool execution.
 
 use crate::atoms::AtomRegistry;
 use crate::llm::{LlmClient, LlmError};
 use crate::memory::{Memory, Message, ToolCall};
 use std::sync::Arc;
-use tokio::sync::Mutex;
 use thiserror::Error;
+use tokio::sync::Mutex;
 
 #[derive(Error, Debug)]
 pub enum ExecutorError {
     #[error("LLM调用失败: {0}")]
     LlmError(#[from] LlmError),
-    
+
     #[error("工具执行失败: {0}")]
     ToolError(String),
-    
+
     #[error("记忆错误: {0}")]
     MemoryError(String),
-    
+
     #[error("执行超时")]
     Timeout,
-    
+
     #[error("用户中断")]
     Interrupted,
 }
@@ -44,97 +44,113 @@ pub struct Executor {
 }
 
 impl Executor {
-    pub fn new(
-        llm: LlmClient,
-        registry: AtomRegistry,
-        memory: Arc<Mutex<Memory>>,
-    ) -> Self {
-        Self { llm, registry, memory }
+    pub fn new(llm: LlmClient, registry: AtomRegistry, memory: Arc<Mutex<Memory>>) -> Self {
+        Self {
+            llm,
+            registry,
+            memory,
+        }
     }
-    
+
     /// Execute a single interaction
     pub async fn execute_once(&self, user_input: &str) -> Result<String, ExecutorError> {
         // Add user message
         {
             let mut memory = self.memory.lock().await;
             memory.add_message(Message::user(user_input));
-            
+
             // Save to file
-            memory.append(&Message::user(user_input)).await
+            memory
+                .append(&Message::user(user_input))
+                .await
                 .map_err(|e| ExecutorError::MemoryError(e.to_string()))?;
         }
-        
+
         // Get context
         let context = {
             let memory = self.memory.lock().await;
             memory.get_context(20)
         };
-        
+
         // Call LLM
         let tools = self.registry.to_tool_definitions();
         let response = self.llm.chat(&context, Some(&tools)).await?;
-        
+
         // Add assistant message
         {
             let mut memory = self.memory.lock().await;
             memory.add_message(response.clone());
-            memory.append(&response).await
+            memory
+                .append(&response)
+                .await
                 .map_err(|e| ExecutorError::MemoryError(e.to_string()))?;
         }
-        
+
         // Check for tool calls
         if let Some(ref tool_calls) = response.tool_calls {
             if !tool_calls.is_empty() {
                 eprintln!("[DEBUG] Detected {} tool calls", tool_calls.len());
                 for tc in tool_calls.iter() {
-                    eprintln!("[DEBUG] Tool call: {}({})", tc.name(), tc.function.arguments);
+                    eprintln!(
+                        "[DEBUG] Tool call: {}({})",
+                        tc.name(),
+                        tc.function.arguments
+                    );
                 }
-                
+
                 let results = self.execute_tools(tool_calls.clone()).await;
-                
+
                 // Add tool results to memory
                 for (i, result) in results.iter().enumerate() {
-                    let tool_call_id = tool_calls.get(i)
+                    let tool_call_id = tool_calls
+                        .get(i)
                         .map(|tc| tc.id.clone())
                         .unwrap_or_default();
                     let msg = Message::tool(tool_call_id, result.output.to_string());
                     eprintln!("[DEBUG] Tool result: {:?}", msg.content.as_str());
                     let mut memory = self.memory.lock().await;
                     memory.add_message(msg.clone());
-                    memory.append(&msg).await
+                    memory
+                        .append(&msg)
+                        .await
                         .map_err(|e| ExecutorError::MemoryError(e.to_string()))?;
                 }
-                
+
                 // Continue conversation with tool results
                 let context = {
                     let memory = self.memory.lock().await;
                     memory.get_context(20)
                 };
-                
+
                 eprintln!("[DEBUG] Sending follow-up request with tool results...");
                 let final_response = self.llm.chat(&context, None).await?;
                 return Ok(final_response.content.as_str().unwrap_or("").to_string());
             }
         }
-        
+
         Ok(response.content.as_str().unwrap_or("").to_string())
     }
-    
+
     /// Execute a single tool
     pub async fn execute_tool(&self, call: ToolCall) -> Result<ExecutionResult, ExecutorError> {
         let start = std::time::Instant::now();
-        
-        let atom = self.registry.get(call.name())
+
+        let atom = self
+            .registry
+            .get(call.name())
             .ok_or_else(|| ExecutorError::ToolError(format!("Unknown tool: {}", call.name())))?;
-        
-        let args = call.arguments()
+
+        let args = call
+            .arguments()
             .map_err(|e| ExecutorError::ToolError(format!("Invalid arguments: {}", e)))?;
-        
-        let output = atom.execute(args).await
+
+        let output = atom
+            .execute(args)
+            .await
             .map_err(|e: crate::atoms::AtomError| ExecutorError::ToolError(e.to_string()))?;
-        
+
         let duration = start.elapsed().as_millis() as u64;
-        
+
         Ok(ExecutionResult {
             success: true,
             output,
@@ -142,15 +158,16 @@ impl Executor {
             duration_ms: duration,
         })
     }
-    
+
     /// Execute multiple tools in parallel
     pub async fn execute_tools(&self, calls: Vec<ToolCall>) -> Vec<ExecutionResult> {
-        let tasks: Vec<_> = calls.into_iter()
+        let tasks: Vec<_> = calls
+            .into_iter()
             .map(|call| {
                 let registry = &self.registry;
                 async move {
                     let start = std::time::Instant::now();
-                    
+
                     let atom = match registry.get(call.name()) {
                         Some(a) => a,
                         None => {
@@ -162,7 +179,7 @@ impl Executor {
                             };
                         }
                     };
-                    
+
                     let args = match call.arguments() {
                         Ok(a) => a,
                         Err(e) => {
@@ -174,10 +191,11 @@ impl Executor {
                             };
                         }
                     };
-                    
-                    let output: Result<serde_json::Value, crate::atoms::AtomError> = atom.execute(args).await;
+
+                    let output: Result<serde_json::Value, crate::atoms::AtomError> =
+                        atom.execute(args).await;
                     let duration = start.elapsed().as_millis() as u64;
-                    
+
                     match output {
                         Ok(v) => ExecutionResult {
                             success: true,
@@ -195,7 +213,7 @@ impl Executor {
                 }
             })
             .collect();
-        
+
         futures::future::join_all(tasks).await
     }
 }
@@ -203,7 +221,7 @@ impl Executor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_executor_creation() {
         let config = crate::llm::LlmConfig {
@@ -212,13 +230,15 @@ mod tests {
             base_url: "http://localhost:1234/v1".to_string(),
             timeout_secs: 60,
         };
-        
+
         let llm = LlmClient::new(config).unwrap();
         let registry = crate::atoms::create_default_registry();
-        let memory = Arc::new(Mutex::new(Memory::new(std::path::PathBuf::from("/tmp/test.jsonl"))));
-        
+        let memory = Arc::new(Mutex::new(Memory::new(std::path::PathBuf::from(
+            "/tmp/test.jsonl",
+        ))));
+
         let _executor = Executor::new(llm, registry, memory);
-        
+
         // Just verify it was created - can't actually run without LLM
         assert!(true);
     }

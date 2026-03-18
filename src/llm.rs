@@ -1,9 +1,9 @@
 //! LLM Module - Neural Transmitter
-//! 
+//!
 //! Handles LLM API communication.
 
-use crate::memory::Message;
 use crate::atoms::ToolDefinition;
+use crate::memory::Message;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -11,16 +11,16 @@ use thiserror::Error;
 pub enum LlmError {
     #[error("API请求失败: {0}")]
     RequestFailed(String),
-    
+
     #[error("API响应解析失败: {0}")]
     ParseError(String),
-    
+
     #[error("API密钥未配置")]
     MissingApiKey,
-    
+
     #[error("模型不支持: {0}")]
     UnsupportedModel(String),
-    
+
     #[error("速率限制")]
     RateLimited,
 }
@@ -74,10 +74,10 @@ impl LlmClient {
             .timeout(std::time::Duration::from_secs(config.timeout_secs))
             .build()
             .map_err(|e| LlmError::RequestFailed(e.to_string()))?;
-        
+
         Ok(Self { client, config })
     }
-    
+
     /// Send a chat request (non-streaming)
     pub async fn chat(
         &self,
@@ -85,18 +85,18 @@ impl LlmClient {
         tools: Option<&[ToolDefinition]>,
     ) -> Result<Message, LlmError> {
         let url = format!("{}/chat/completions", self.config.base_url);
-        
+
         let mut request = ChatRequest {
             model: self.config.model.clone(),
             messages: messages.to_vec(),
             tools: None,
             stream: false,
         };
-        
+
         if let Some(t) = tools {
             request.tools = Some(t.to_vec());
         }
-        
+
         // Debug: print request body
         #[cfg(debug_assertions)]
         {
@@ -104,8 +104,9 @@ impl LlmClient {
                 eprintln!("[DEBUG] LLM Request:\n{}", json);
             }
         }
-        
-        let response = self.client
+
+        let response = self
+            .client
             .post(&url)
             .header("Content-Type", "application/json")
             .header("Authorization", format!("Bearer {}", self.config.api_key))
@@ -113,50 +114,52 @@ impl LlmClient {
             .send()
             .await
             .map_err(|e| LlmError::RequestFailed(e.to_string()))?;
-        
+
         if response.status() == 429 {
             return Err(LlmError::RateLimited);
         }
-        
+
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
             return Err(LlmError::RequestFailed(format!("{}: {}", status, body)));
         }
-        
+
         let chat_response: ChatResponse = response
             .json()
             .await
             .map_err(|e| LlmError::ParseError(e.to_string()))?;
-        
-        chat_response.choices
+
+        chat_response
+            .choices
             .into_iter()
             .next()
             .map(|c| c.message)
             .ok_or_else(|| LlmError::ParseError("No choices in response".to_string()))
     }
-    
+
     /// Test connection to LLM API
     pub async fn test_connection(&self) -> Result<(), LlmError> {
         let test_message = Message::user("ping");
         self.chat(&[test_message], None).await?;
         Ok(())
     }
-    
+
     /// Perform OCR on an image using vision model
     pub async fn ocr_image(&self, image_base64: &str, prompt: &str) -> Result<String, LlmError> {
         let url = format!("{}/chat/completions", self.config.base_url);
-        
+
         let message = Message::user_with_image(prompt, image_base64);
-        
+
         let request = ChatRequest {
             model: self.config.model.clone(),
             messages: vec![message],
             tools: None,
             stream: false,
         };
-        
-        let response = self.client
+
+        let response = self
+            .client
             .post(&url)
             .header("Content-Type", "application/json")
             .header("Authorization", format!("Bearer {}", self.config.api_key))
@@ -164,19 +167,20 @@ impl LlmClient {
             .send()
             .await
             .map_err(|e| LlmError::RequestFailed(e.to_string()))?;
-        
+
         if !response.status().is_success() {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
             return Err(LlmError::RequestFailed(format!("{}: {}", status, body)));
         }
-        
+
         let chat_response: ChatResponse = response
             .json()
             .await
             .map_err(|e| LlmError::ParseError(e.to_string()))?;
-        
-        chat_response.choices
+
+        chat_response
+            .choices
             .into_iter()
             .next()
             .map(|c| c.message.content.as_str().unwrap_or("").to_string())
@@ -187,7 +191,7 @@ impl LlmClient {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_llm_config() {
         let config = LlmConfig {
@@ -196,10 +200,10 @@ mod tests {
             base_url: "https://api.openai.com/v1".to_string(),
             timeout_secs: 60,
         };
-        
+
         assert_eq!(config.model, "gpt-4");
     }
-    
+
     #[test]
     fn test_requires_api_key() {
         let config_with_key = LlmConfig {
@@ -209,7 +213,7 @@ mod tests {
             timeout_secs: 60,
         };
         assert!(config_with_key.requires_api_key());
-        
+
         let config_no_key = LlmConfig {
             model: "local-model".to_string(),
             api_key: "".to_string(),

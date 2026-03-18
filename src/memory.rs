@@ -1,5 +1,5 @@
 //! Memory Module - Neural Trace
-//! 
+//!
 //! Manages conversation history with JSONL persistence.
 
 use serde::{Deserialize, Serialize};
@@ -10,10 +10,10 @@ use thiserror::Error;
 pub enum MemoryError {
     #[error("文件操作失败: {0}")]
     IoError(#[from] std::io::Error),
-    
+
     #[error("JSON解析失败: {0}")]
     ParseError(#[from] serde_json::Error),
-    
+
     #[error("记忆文件格式错误")]
     InvalidFormat,
 }
@@ -83,12 +83,12 @@ mod serde_content {
         D: Deserializer<'de>,
     {
         let value = serde_json::Value::deserialize(deserializer)?;
-        
+
         if let Some(text) = value.as_str() {
             Ok(Content::Text(text.to_string()))
-        } else if let Some(array) = value.as_array() {
-            let parts: Vec<ContentPart> = serde_json::from_value(value)
-                .map_err(serde::de::Error::custom)?;
+        } else if let Some(_array) = value.as_array() {
+            let parts: Vec<ContentPart> =
+                serde_json::from_value(value).map_err(serde::de::Error::custom)?;
             Ok(Content::Parts(parts))
         } else {
             Err(serde::de::Error::custom("content must be string or array"))
@@ -105,24 +105,24 @@ impl Message {
             tool_call_id: None,
         }
     }
-    
+
     /// Create a user message with image for vision models
     pub fn user_with_image(text: impl Into<String>, image_base64: impl Into<String>) -> Self {
         Self {
             role: "user".to_string(),
             content: Content::Parts(vec![
                 ContentPart::Text { text: text.into() },
-                ContentPart::ImageUrl { 
-                    image_url: ImageUrl { 
-                        url: format!("data:image/jpeg;base64, {}", image_base64.into())
-                    }
+                ContentPart::ImageUrl {
+                    image_url: ImageUrl {
+                        url: format!("data:image/jpeg;base64, {}", image_base64.into()),
+                    },
                 },
             ]),
             tool_calls: None,
             tool_call_id: None,
         }
     }
-    
+
     pub fn assistant(content: impl Into<String>) -> Self {
         Self {
             role: "assistant".to_string(),
@@ -131,7 +131,7 @@ impl Message {
             tool_call_id: None,
         }
     }
-    
+
     pub fn assistant_with_tools(tool_calls: Vec<ToolCall>) -> Self {
         Self {
             role: "assistant".to_string(),
@@ -140,7 +140,7 @@ impl Message {
             tool_call_id: None,
         }
     }
-    
+
     pub fn system(content: impl Into<String>) -> Self {
         Self {
             role: "system".to_string(),
@@ -149,7 +149,7 @@ impl Message {
             tool_call_id: None,
         }
     }
-    
+
     /// Create a tool result message
     pub fn tool(tool_call_id: impl Into<String>, content: impl Into<String>) -> Self {
         Self {
@@ -165,7 +165,7 @@ impl Message {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FunctionCall {
     pub name: String,
-    pub arguments: String,  // JSON string, e.g., "{\"path\": \"file.txt\"}"
+    pub arguments: String, // JSON string, e.g., "{\"path\": \"file.txt\"}"
 }
 
 /// A tool call returned by LLM (OpenAI format)
@@ -188,12 +188,12 @@ impl ToolCall {
             },
         }
     }
-    
+
     /// Get the function name
     pub fn name(&self) -> &str {
         &self.function.name
     }
-    
+
     /// Get parsed arguments as JSON Value
     pub fn arguments(&self) -> Result<serde_json::Value, serde_json::Error> {
         serde_json::from_str(&self.function.arguments)
@@ -215,15 +215,15 @@ impl Memory {
             messages: Vec::new(),
         }
     }
-    
+
     /// Load history from JSONL file
     pub async fn load(&mut self) -> Result<(), MemoryError> {
         if !self.path.exists() {
             return Ok(());
         }
-        
+
         let content = tokio::fs::read_to_string(&self.path).await?;
-        
+
         self.messages.clear();
         for line in content.lines() {
             if line.trim().is_empty() {
@@ -232,10 +232,10 @@ impl Memory {
             let msg: Message = serde_json::from_str(line)?;
             self.messages.push(msg);
         }
-        
+
         Ok(())
     }
-    
+
     /// Append a message to history
     pub async fn append(&self, msg: &Message) -> Result<(), MemoryError> {
         let line = serde_json::to_string(msg)?;
@@ -244,73 +244,77 @@ impl Memory {
             .append(true)
             .open(&self.path)
             .await?;
-        
+
         use tokio::io::AsyncWriteExt;
         file.write_all(line.as_bytes()).await?;
         file.write_all(b"\n").await?;
-        
+
         Ok(())
     }
-    
+
     /// Clear all memory
     pub async fn clear(&self) -> Result<(), MemoryError> {
         tokio::fs::write(&self.path, "").await?;
         Ok(())
     }
-    
+
     /// Export memory to a file
     pub async fn export(&self, path: &Path) -> Result<(), MemoryError> {
         let content = serde_json::to_string_pretty(&self.messages)?;
         tokio::fs::write(path, content).await?;
         Ok(())
     }
-    
+
     /// Import memory from a file
     pub async fn import(&mut self, path: &Path) -> Result<(), MemoryError> {
         let content = tokio::fs::read_to_string(path).await?;
         self.messages = serde_json::from_str(&content)?;
         Ok(())
     }
-    
+
     /// Get all messages
     pub fn get_messages(&self) -> &[Message] {
         &self.messages
     }
-    
+
     /// Get messages for context (with simple truncation)
     pub fn get_context(&self, max_messages: usize) -> Vec<Message> {
         if self.messages.len() <= max_messages {
             return self.messages.clone();
         }
-        
+
         // Keep system prompt if present, then take last max_messages
-        let system_msgs: Vec<_> = self.messages.iter()
+        let system_msgs: Vec<_> = self
+            .messages
+            .iter()
             .filter(|m| m.role == "system")
             .cloned()
             .collect();
-        
-        let other_msgs: Vec<_> = self.messages.iter()
+
+        let other_msgs: Vec<_> = self
+            .messages
+            .iter()
             .filter(|m| m.role != "system")
             .rev()
             .take(max_messages)
             .cloned()
             .collect();
-        
+
         let mut result = system_msgs;
         result.extend(other_msgs.into_iter().rev());
         result
     }
-    
+
     /// Add a message to memory (in-memory)
     pub fn add_message(&mut self, msg: Message) {
         self.messages.push(msg);
     }
-    
+
     /// Get message count
     pub fn len(&self) -> usize {
         self.messages.len()
     }
-    
+
     /// Check if empty
     pub fn is_empty(&self) -> bool {
         self.messages.is_empty()
@@ -321,38 +325,38 @@ impl Memory {
 mod tests {
     use super::*;
     use tempfile::TempDir;
-    
+
     #[tokio::test]
     async fn test_memory_append() {
         let temp = TempDir::new().unwrap();
         let path = temp.path().join("memory.jsonl");
-        
+
         let memory = Memory::new(path);
         let msg = Message::user("Hello");
         memory.append(&msg).await.unwrap();
-        
+
         let content = tokio::fs::read_to_string(&memory.path).await.unwrap();
         assert!(content.contains("Hello"));
     }
-    
+
     #[tokio::test]
     async fn test_memory_load() {
         let temp = TempDir::new().unwrap();
         let path = temp.path().join("memory.jsonl");
-        
+
         // Write test data
         let data = r#"{"role":"user","content":"Hi"}
 {"role":"assistant","content":"Hello"}
 "#;
         tokio::fs::write(&path, data).await.unwrap();
-        
+
         let mut memory = Memory::new(path);
         memory.load().await.unwrap();
-        
+
         assert_eq!(memory.len(), 2);
         assert_eq!(memory.get_messages()[0].content.as_str(), Some("Hi"));
     }
-    
+
     #[test]
     fn test_message_creation() {
         let msg = Message::user("test");
