@@ -9,7 +9,7 @@ repository = "https://github.com/fenixnix/Axon"
 homepage = "https://github.com/fenixnix/Axon"
 keywords = ["cli", "agent", "llm", "ai", "automation", "rust"]
 categories = ["command-line-utilities", "development-tools"]
-rust-version = "1.75"
+rust-version = "1.85"
 
 [dependencies]
 # Async Runtime
