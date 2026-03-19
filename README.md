@@ -7,8 +7,6 @@
 <p align="center">
   <a href="https://github.com/fenixnix/Axon/releases"><img src="https://img.shields.io/github/v/release/fenixnix/Axon?style=flat-square&color=blue" alt="Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" alt="License"></a>
-  <a href="https://www.rust-lang.org"><img src="https://img.shields.io/badge/rust-2024%20edition-orange.svg?style=flat-square&logo=rust" alt="Rust"></a>
-  <a href="https://tokio.rs"><img src="https://img.shields.io/badge/async-tokio-green.svg?style=flat-square" alt="Tokio"></a>
   <br>
   <a href="https://github.com/fenixnix/Axon/stargazers"><img src="https://img.shields.io/github/stars/fenixnix/Axon?style=flat-square&color=yellow" alt="Stars"></a>
   <a href="https://github.com/fenixnix/Axon/network/members"><img src="https://img.shields.io/github/forks/fenixnix/Axon?style=flat-square&color=green" alt="Forks"></a>
@@ -21,12 +19,12 @@
 </p>
 
 <p align="center">
-  <strong>An AI Agent CLI that thinks, decides, and executes — written in Rust.</strong>
+  <strong>An AI Agent CLI that thinks, decides, and executes.</strong>
 </p>
 
 <p align="center">
   Axon is an autonomous AI agent that understands natural language, plans tasks, and executes tools.<br>
-  Built with Rust for memory safety and zero-cost abstractions — every "nerve impulse" (command) is processed with maximum speed.
+  Every "nerve impulse" (command) is processed with maximum speed.
 </p>
 
 ---
@@ -54,7 +52,7 @@
 
 ### ⚡ Ultra-Lightweight
 - 🪶 **Tiny Binary** — ~5MB single executable, no dependencies
-- 🚀 **Instant Start** — Compiled binary runs immediately
+- 🚀 **One-Line Run** — Works out of the box
 - 🔋 **Zero State** — No daemon, no background process
 
 ### 🧠 AI Integration
@@ -67,7 +65,7 @@
 
 ### 🔧 Developer Experience
 - 🧬 **Macro-Based Atoms** — Clean, declarative skill syntax
-- 📜 **Async I/O** — Non-blocking execution with `tokio`
+- 📜 **Async I/O** — Non-blocking execution
 - 📋 **CLI-Friendly** — Clean argument parsing and help messages
 
 ### 🛠️ Built-in Tools
@@ -99,7 +97,7 @@ $ axon exec "Find all Rust files and count lines of code"
 
 ### Prerequisites
 
-- [Rust](https://rust-lang.org) 1.75+ (with Edition 2024 support)
+- [Rust](https://rust-lang.org) 1.75+ (for building from source)
 - API key for your preferred LLM provider
 
 ### One-Line Install
@@ -252,8 +250,8 @@ axon memory export backup.jsonl
 
 ### Component Mapping
 
-| Component | Biological Analog | Rust Implementation | Purpose |
-|-----------|-------------------|---------------------|---------|
+| Component | Biological Analog | Implementation | Purpose |
+|-----------|-------------------|----------------|---------|
 | **Stimulus** | External Stimulus | CLI with `crossterm` | User input handling |
 | **Dendrite** | Dendrites | Input parser | Context loading |
 | **Soma** | Cell Body | Async core | State management |
@@ -381,8 +379,6 @@ This project is licensed under the [MIT License](LICENSE).
 
 ## 🙏 Acknowledgments
 
-- Built with [Rust](https://www.rust-lang.org/) 🦀
-- Async runtime powered by [Tokio](https://tokio.rs/)
 - CLI framework by [Clap](https://github.com/clap-rs/clap)
 
 ---

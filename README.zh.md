@@ -7,8 +7,6 @@
 <p align="center">
   <a href="https://github.com/fenixnix/Axon/releases"><img src="https://img.shields.io/github/v/release/fenixnix/Axon?style=flat-square&color=blue" alt="Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" alt="License"></a>
-  <a href="https://www.rust-lang.org"><img src="https://img.shields.io/badge/rust-2024%20edition-orange.svg?style=flat-square&logo=rust" alt="Rust"></a>
-  <a href="https://tokio.rs"><img src="https://img.shields.io/badge/async-tokio-green.svg?style=flat-square" alt="Tokio"></a>
   <br>
   <a href="https://github.com/fenixnix/Axon/stargazers"><img src="https://img.shields.io/github/stars/fenixnix/Axon?style=flat-square&color=yellow" alt="Stars"></a>
   <a href="https://github.com/fenixnix/Axon/network/members"><img src="https://img.shields.io/github/forks/fenixnix/Axon?style=flat-square&color=green" alt="Forks"></a>
@@ -21,16 +19,16 @@
 </p>
 
 <p align="center">
-  <strong>An AI Agent CLI that thinks, decides, and executes — written in Rust.</strong>
+  <strong>An AI Agent CLI that thinks, decides, and executes.</strong>
 </p>
 
 <p align="center">
-  <strong>一个能思考、决策并执行的 AI Agent CLI —— 使用 Rust 编写。</strong>
+  <strong>一个能思考、决策并执行的 AI Agent CLI。</strong>
 </p>
 
 <p align="center">
   Axon 是一个自主 AI Agent，能够理解自然语言、规划任务并执行工具。<br>
-  基于 Rust 构建，具备内存安全和零成本抽象 —— 每一次"神经冲动"（命令）都以最高速度处理。
+  每一次"神经冲动"（命令）都以最高速度处理。
 </p>
 
 ---
@@ -58,7 +56,7 @@
 
 ### ⚡ 超轻量级
 - 🪶 **迷你体积** — 约 5MB 单文件，无依赖
-- 🚀 **瞬时启动** — 编译后直接运行
+- 🚀 **一行运行** — 开箱即用
 - 🔋 **零状态** — 无守护进程，无后台进程
 
 ### 🧠 AI 集成
@@ -71,7 +69,7 @@
 
 ### 🔧 开发者体验
 - 🧬 **宏驱动的原子** — 简洁、声明式的技能语法
-- 📜 **异步 I/O** — 基于 `tokio` 的非阻塞执行
+- 📜 **异步 I/O** — 非阻塞执行
 - 📋 **命令行友好** — 简洁的参数解析和帮助信息
 
 ### 🛠️ 内置工具
@@ -103,7 +101,7 @@ $ axon exec "查找所有 Rust 文件并统计代码行数"
 
 ### 环境要求
 
-- [Rust](https://rust-lang.org) 1.75+ (支持 2024 Edition)
+- [Rust](https://rust-lang.org) 1.75+ (用于从源码构建)
 - 你选择的 LLM 提供商的 API 密钥
 
 ### 一行命令安装
@@ -256,9 +254,9 @@ axon memory export backup.jsonl
 
 ### 组件映射
 
-| 组件 | 生物对应 | Rust 实现 | 用途 |
-|------|----------|-----------|------|
-| **刺激** | 外部刺激 | 基于 `crossterm` 的 CLI | 用户输入处理 |
+| 组件 | 生物对应 | 实现 | 用途 |
+|------|----------|------|------|
+| **刺激** | 外部刺激 | CLI | 用户输入处理 |
 | **树突** | 树突 | 输入解析器 | 上下文加载 |
 | **胞体** | 细胞体 | 异步核心 | 状态管理 |
 | **轴突** | 轴突 | 执行器 | 任务路由 |
@@ -385,8 +383,6 @@ git push origin feature/amazing-feature
 
 ## 🙏 致谢
 
-- 使用 [Rust](https://www.rust-lang.org/) 构建 🦀
-- 异步运行时由 [Tokio](https://tokio.rs/) 提供支持
 - CLI 框架由 [Clap](https://github.com/clap-rs/clap) 提供
 
 ---
