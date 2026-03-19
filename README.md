@@ -19,12 +19,12 @@
 </p>
 
 <p align="center">
-  <strong>An AI Agent CLI that thinks, decides, and executes.</strong>
+  <strong>One-shot AI Agent CLI — think, decide, execute.</strong>
 </p>
 
 <p align="center">
-  Axon is an autonomous AI agent that understands natural language, plans tasks, and executes tools.<br>
-  Every "nerve impulse" (command) is processed with maximum speed.
+  ⚡ ~5MB | 🚀 One-line run | 🧠 Biological-inspired neural conduit<br>
+  Single shot, fire and release. No daemon. No build. Just execution.
 </p>
 
 ---

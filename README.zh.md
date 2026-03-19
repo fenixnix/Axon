@@ -19,15 +19,13 @@
 </p>
 
 <p align="center">
-  <strong>An AI Agent CLI that thinks, decides, and executes.</strong>
+  <strong>One-shot AI Agent CLI — 思考、决策、执行。</strong>
 </p>
 
 <p align="center">
-  <strong>一个能思考、决策并执行的 AI Agent CLI。</strong>
+  ⚡ ~5MB | 🚀 一行运行 | 🧠 生物启发式神经导管<br>
+  单发即中，开箱即用。无守护进程，直接执行。
 </p>
-
-<p align="center">
-  Axon 是一个自主 AI Agent，能够理解自然语言、规划任务并执行工具。<br>
   每一次"神经冲动"（命令）都以最高速度处理。
 </p>
 
