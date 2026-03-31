@@ -8,6 +8,7 @@ use crate::executor::Executor;
 use crate::llm::LlmClient;
 use crate::llm::LlmConfig;
 use crate::memory::Memory;
+use crate::memory::Message;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use std::path::Path;
@@ -268,7 +269,25 @@ async fn handle_run(executor: &Executor, system: Option<&str>, quiet: bool) -> R
     if !quiet {
         println!("Axon - Interactive Mode (Ctrl+C to exit)");
         if let Some(s) = system {
-            println!("System: {}", s);
+            println!("System: {}", &s[..s.len().min(80)]);
+        }
+    }
+
+    // Inject system prompt and load history on first call
+    {
+        let mut memory = executor.memory().lock().await;
+        memory.load().await?;
+
+        if let Some(persona) = system {
+            // Only inject if no system message already exists
+            let has_system = memory.get_messages().iter().any(|m| m.role == "system");
+            if !has_system {
+                memory.add_message(Message::system(persona));
+                memory
+                    .append(&Message::system(persona))
+                    .await
+                    .map_err(|e| anyhow::anyhow!("Failed to save system prompt: {}", e))?;
+            }
         }
     }
 
@@ -303,7 +322,7 @@ async fn handle_run(executor: &Executor, system: Option<&str>, quiet: bool) -> R
 
 async fn handle_chat(
     executor: &Executor,
-    _continue_: bool,
+    continue_: bool,
     clear: bool,
     quiet: bool,
 ) -> Result<()> {
@@ -312,14 +331,22 @@ async fn handle_chat(
     }
 
     if clear {
-        let memory = Arc::new(Mutex::new(Memory::new(PathBuf::from("memory.jsonl"))));
-        memory.lock().await.clear().await?;
+        let memory = executor.memory().lock().await;
+        memory.clear().await?;
         if !quiet {
             println!("Chat history cleared.");
         }
     }
 
-    // For now, same as run
+    if !continue_ {
+        // Load and clear history for new chat
+        {
+            let mut memory = executor.memory().lock().await;
+            memory.load().await?;
+            memory.clear().await?;
+        }
+    }
+
     handle_run(executor, None, quiet).await
 }
 

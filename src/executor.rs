@@ -52,8 +52,15 @@ impl Executor {
         }
     }
 
-    /// Execute a single interaction
+    /// Access the memory instance
+    pub fn memory(&self) -> &Arc<Mutex<Memory>> {
+        &self.memory
+    }
+
+    /// Execute a single interaction with multi-round tool calling support
     pub async fn execute_once(&self, user_input: &str) -> Result<String, ExecutorError> {
+        const MAX_TOOL_ITERATIONS: usize = 10;
+
         // Add user message
         {
             let mut memory = self.memory.lock().await;
@@ -66,17 +73,15 @@ impl Executor {
                 .map_err(|e| ExecutorError::MemoryError(e.to_string()))?;
         }
 
-        // Get context
+        // Initial LLM call
+        let tools = self.registry.to_tool_definitions();
         let context = {
             let memory = self.memory.lock().await;
             memory.get_context(20)
         };
+        let mut response = self.llm.chat(&context, Some(&tools)).await?;
 
-        // Call LLM
-        let tools = self.registry.to_tool_definitions();
-        let response = self.llm.chat(&context, Some(&tools)).await?;
-
-        // Add assistant message
+        // Save assistant response to memory
         {
             let mut memory = self.memory.lock().await;
             memory.add_message(response.clone());
@@ -86,45 +91,66 @@ impl Executor {
                 .map_err(|e| ExecutorError::MemoryError(e.to_string()))?;
         }
 
-        // Check for tool calls
-        if let Some(ref tool_calls) = response.tool_calls {
-            if !tool_calls.is_empty() {
-                eprintln!("[DEBUG] Detected {} tool calls", tool_calls.len());
-                for tc in tool_calls.iter() {
-                    eprintln!(
-                        "[DEBUG] Tool call: {}({})",
-                        tc.name(),
-                        tc.function.arguments
-                    );
-                }
+        // Multi-round tool call loop
+        let mut iteration = 0;
+        while let Some(ref tool_calls) = response.tool_calls {
+            if tool_calls.is_empty() {
+                break;
+            }
 
-                let results = self.execute_tools(tool_calls.clone()).await;
+            iteration += 1;
+            if iteration > MAX_TOOL_ITERATIONS {
+                return Err(ExecutorError::ToolError(format!(
+                    "Exceeded maximum tool call iterations ({})",
+                    MAX_TOOL_ITERATIONS
+                )));
+            }
 
-                // Add tool results to memory
-                for (i, result) in results.iter().enumerate() {
-                    let tool_call_id = tool_calls
-                        .get(i)
-                        .map(|tc| tc.id.clone())
-                        .unwrap_or_default();
-                    let msg = Message::tool(tool_call_id, result.output.to_string());
-                    eprintln!("[DEBUG] Tool result: {:?}", msg.content.as_str());
-                    let mut memory = self.memory.lock().await;
-                    memory.add_message(msg.clone());
-                    memory
-                        .append(&msg)
-                        .await
-                        .map_err(|e| ExecutorError::MemoryError(e.to_string()))?;
-                }
+            eprintln!("[DEBUG] Tool iteration {}/{}: {} tool calls", iteration, MAX_TOOL_ITERATIONS, tool_calls.len());
+            for tc in tool_calls.iter() {
+                eprintln!(
+                    "[DEBUG] Tool call: {}({})",
+                    tc.name(),
+                    tc.function.arguments
+                );
+            }
 
-                // Continue conversation with tool results
-                let context = {
-                    let memory = self.memory.lock().await;
-                    memory.get_context(20)
-                };
+            // Execute all tools in parallel
+            let results = self.execute_tools(tool_calls.clone()).await;
 
-                eprintln!("[DEBUG] Sending follow-up request with tool results...");
-                let final_response = self.llm.chat(&context, None).await?;
-                return Ok(final_response.content.as_str().unwrap_or("").to_string());
+            // Add tool results to memory
+            for (i, result) in results.iter().enumerate() {
+                let tool_call_id = tool_calls
+                    .get(i)
+                    .map(|tc| tc.id.clone())
+                    .unwrap_or_default();
+                let output_str = result.output.to_string();
+                eprintln!("[DEBUG] Tool result: {}", &output_str[..output_str.len().min(200)]);
+                let msg = Message::tool(tool_call_id, output_str);
+                let mut memory = self.memory.lock().await;
+                memory.add_message(msg.clone());
+                memory
+                    .append(&msg)
+                    .await
+                    .map_err(|e| ExecutorError::MemoryError(e.to_string()))?;
+            }
+
+            // Continue conversation with tool results
+            let context = {
+                let memory = self.memory.lock().await;
+                memory.get_context(20)
+            };
+
+            response = self.llm.chat(&context, None).await?;
+
+            // Save this assistant response to memory
+            {
+                let mut memory = self.memory.lock().await;
+                memory.add_message(response.clone());
+                memory
+                    .append(&response)
+                    .await
+                    .map_err(|e| ExecutorError::MemoryError(e.to_string()))?;
             }
         }
 
