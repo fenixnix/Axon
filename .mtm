@@ -1,0 +1,8 @@
+﻿name: Axon
+description: Rust构建的轻量级AI Agent框架，支持LLM调用与记忆管理
+tags:
+- ai
+- agent
+- rust
+created_at: 2026-04-07
+priority: null
